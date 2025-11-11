@@ -88,16 +88,8 @@ export default async function DashboardPage() {
             <Charts summary={summary} />
 
             <section className="p-4 rounded border bg-white/60 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-white/50">
-              <h2 className="font-semibold mb-2">AI Coaching</h2>
-              <AdvicePanel
-                facts={{
-                  top: topCategory,
-                  burn: dailyBurn,
-                  projected: projectedMonthEnd,
-                  budget: goal?.limit ?? null,
-                  fallback: tips, // uses smartTips if local LLM isn't ready
-                }}
-              />
+            <h2 className="font-semibold mb-2">AI Coaching</h2>
+            <AdvicePanel />
             </section>
 
             <section className="p-4 rounded border bg-white/60 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-white/50">
