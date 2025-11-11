@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Charts from "./components/Charts";
@@ -39,17 +40,13 @@ export default async function DashboardPage() {
   const summary = summarize(expenses as any);
   const tips = smartTips(expenses as any);
 
-  // month context & current budget goal
+  // month context & current budget goal (optional usage)
   const { dailyBurn, projectedMonthEnd } = monthContext(expenses as any);
   const now = new Date();
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const goal = await prisma.budgetGoal.findUnique({
     where: { userId_month: { userId: user.id, month: monthKey } },
   });
-
-  // top category name for AI coaching facts
-  const topCategory =
-    Object.entries(summary.byCategory).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "other";
 
   const spent = spentThisMonth(expenses);
 
@@ -88,8 +85,9 @@ export default async function DashboardPage() {
             <Charts summary={summary} />
 
             <section className="p-4 rounded border bg-white/60 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-white/50">
-            <h2 className="font-semibold mb-2">AI Coaching</h2>
-            <AdvicePanel />
+              <h2 className="font-semibold mb-2">AI Coaching</h2>
+              {/* Uses /api/ai/analyze internally; no props needed */}
+              <AdvicePanel />
             </section>
 
             <section className="p-4 rounded border bg-white/60 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-white/50">
