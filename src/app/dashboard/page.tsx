@@ -86,7 +86,6 @@ export default async function DashboardPage() {
 
             <section className="p-4 rounded border bg-white/60 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-white/50">
               <h2 className="font-semibold mb-2">AI Coaching</h2>
-              {/* Uses /api/ai/analyze internally; no props needed */}
               <AdvicePanel />
             </section>
 
