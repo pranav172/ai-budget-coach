@@ -1,0 +1,63 @@
+// prisma/schema.prod.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  expenses    Expense[]
+  sessions    Session[]
+  budgetGoals BudgetGoal[]
+  createdAt   DateTime     @default(now())
+}
+
+// Expense model
+model Expense {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime
+  amount    Float
+  merchant  String
+  category  String?
+  createdAt DateTime @default(now())
+}
+
+// Session model
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}
+
+// BudgetGoal model
+model BudgetGoal {
+  id        String   @id @default(uuid())
+  userId    String
+  month     String // "YYYY-MM"
+  limit     Float
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
