@@ -50,3 +50,12 @@ model BudgetGoal {
 
   @@unique([userId, month])
 }
+model OtpCode {
+  id        String   @id @default(uuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
