@@ -1,25 +1,25 @@
-// prisma/schema.prisma
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
-
+// prisma/schema.prod.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-
-  // Relations
-  expenses    Expense[]
-  sessions    Session[]
-  budgetGoals BudgetGoal[] // ✅ back-relation for BudgetGoal
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// User model
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  expenses    Expense[]
+  sessions    Session[]
+  budgetGoals BudgetGoal[]
+  createdAt   DateTime     @default(now())
+}
+
+// Expense model
 model Expense {
   id        String   @id @default(uuid())
   userId    String
@@ -31,6 +31,7 @@ model Expense {
   createdAt DateTime @default(now())
 }
 
+// Session model
 model Session {
   id        String   @id
   userId    String
@@ -38,24 +39,14 @@ model Session {
   expiresAt DateTime
 }
 
+// BudgetGoal model
 model BudgetGoal {
   id        String   @id @default(uuid())
   userId    String
   month     String // "YYYY-MM"
   limit     Float
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month])
-}
-
-model OtpCode {
-  id        String   @id @default(uuid())
-  email     String
-  codeHash  String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([email])
 }
