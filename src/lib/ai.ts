@@ -1,5 +1,7 @@
 // src/lib/ai.ts
-const PROVIDER = process.env.AI_PROVIDER?.toLowerCase() || "openrouter";
+import { callGemini as callGeminiAPI } from "./gemini";
+
+const PROVIDER = process.env.AI_PROVIDER?.toLowerCase() || "gemini";
 
 // Prefer setting this in .env for correct referer on prod
 const SITE_URL =
@@ -83,6 +85,24 @@ async function callGroq(prompt: string) {
 }
 
 export async function callAI(prompt: string) {
-  if (PROVIDER === "groq") return callGroq(prompt);
+  // Try Gemini first (free, powerful, 1500 req/day)
+  if (PROVIDER === "gemini" || process.env.GOOGLE_AI_API_KEY) {
+    try {
+      return await callGeminiAPI(prompt);
+    } catch (err) {
+      console.warn("Gemini failed, falling back to OpenRouter:", err);
+    }
+  }
+  
+  // Fallback to Groq if configured
+  if (PROVIDER === "groq" || process.env.GROQ_API_KEY) {
+    try {
+      return await callGroq(prompt);
+    } catch (err) {
+      console.warn("Groq failed, falling back to OpenRouter:", err);
+    }
+  }
+  
+  // Final fallback to OpenRouter
   return callOpenRouter(prompt);
 }
