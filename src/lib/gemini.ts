@@ -9,9 +9,9 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
  */
 export async function callGemini(prompt: string): Promise<string> {
   try {
-    // Use gemini-1.5-flash model with JSON mode for better compatibility
+    // Use gemini-pro - the stable, production model
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-pro",
       generationConfig: {
         temperature: 0.2,
       }
@@ -42,7 +42,7 @@ export async function callGeminiVision(
 ): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-pro-vision",
       generationConfig: {
         temperature: 0.2,
       }
