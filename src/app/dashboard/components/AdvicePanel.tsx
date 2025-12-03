@@ -15,17 +15,28 @@ export default function AdvicePanel() {
   const [loading, setLoading] = useState(false);
   const [provider, setProvider] = useState<string>("");
   const [data, setData] = useState<AIData | null>(null);
+  const [error, setError] = useState<string>("");
 
   async function run() {
     setLoading(true);
-    const r = await fetch("/api/ai/analyze", { cache: "no-store" });
-    setLoading(false);
-    if (r.ok) {
-      const j = await r.json();
-      setProvider(j.provider);
-      setData(j.data);
-    } else {
+    setError("");
+    try {
+      const r = await fetch("/api/ai/analyze", { cache: "no-store" });
+      if (r.ok) {
+        const j = await r.json();
+        setProvider(j.provider || "gemini");
+        setData(j.data || null);
+      } else {
+        const errorText = await r.text().catch(() => "Failed to load AI insights");
+        setError(errorText);
+        setData(null);
+      }
+    } catch (err: any) {
+      console.error("AI Panel error:", err);
+      setError(err?.message || "Failed to connect to AI service");
       setData(null);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -43,8 +54,13 @@ export default function AdvicePanel() {
         </div>
       </div>
 
-      {!data ? (
-        <p className="text-sm opacity-70">No insights yet.</p>
+      {error ? (
+        <div className="text-sm p-3 border border-red-500/30 bg-red-500/5 rounded">
+          <p className="font-medium text-red-600 dark:text-red-400">AI temporarily unavailable</p>
+          <p className="text-xs opacity-70 mt-1">Your expenses are still being tracked. Try again later.</p>
+        </div>
+      ) : !data ? (
+        <p className="text-sm opacity-70">Loading insights...</p>
       ) : (
         <div className="space-y-4">
           <p className="text-sm">{data.month_summary}</p>
@@ -54,7 +70,7 @@ export default function AdvicePanel() {
               <h4 className="font-medium mb-1">Top categories</h4>
               <ul className="text-sm list-disc pl-5">
                 {data.top_categories.map((c, i) => (
-                  <li key={i}>{c.category}: ₹{c.spend?.toFixed?.(0)}</li>
+                  <li key={i}>{c.category}: ${c.spend?.toFixed?.(0)}</li>
                 ))}
               </ul>
             </div>
@@ -65,7 +81,7 @@ export default function AdvicePanel() {
               <h4 className="font-medium mb-1">Anomalies</h4>
               <ul className="text-sm list-disc pl-5">
                 {data.anomalies.map((a, i) => (
-                  <li key={i}>{a.reason} — ₹{a.amount?.toFixed?.(0)} {a.date ? `(${a.date})` : ""}</li>
+                  <li key={i}>{a.reason} — ${a.amount?.toFixed?.(0)} {a.date ? `(${a.date})` : ""}</li>
                 ))}
               </ul>
             </div>

@@ -19,19 +19,27 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { user } = await getSession();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const { user } = await getSession();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { limit } = await req.json();
-  const val = Number(limit);
-  if (!val || val < 0) return NextResponse.json({ error: "Invalid limit" }, { status: 400 });
+    const { limit } = await req.json();
+    const val = Number(limit);
+    if (!val || val < 0) return NextResponse.json({ error: "Invalid limit" }, { status: 400 });
 
-  const key = monthKey();
-  const upsert = await prisma.budgetGoal.upsert({
-    where: { userId_month: { userId: user.id, month: key } },
-    update: { limit: val },
-    create: { userId: user.id, month: key, limit: val },
-  });
+    const key = monthKey();
+    const upsert = await prisma.budgetGoal.upsert({
+      where: { userId_month: { userId: user.id, month: key } },
+      update: { limit: val },
+      create: { userId: user.id, month: key, limit: val },
+    });
 
-  return NextResponse.json({ month: key, limit: upsert.limit });
+    return NextResponse.json({ month: key, limit: upsert.limit });
+  } catch (error: any) {
+    console.error("Budget save error:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to save budget" },
+      { status: 500 }
+    );
+  }
 }
