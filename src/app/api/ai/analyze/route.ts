@@ -17,85 +17,106 @@ function toCSVLike(rows: Array<{ date: Date; amount: number; merchant: string; c
 }
 
 export async function GET() {
-  const { user } = await getSession();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const { user } = await getSession();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await prisma.expense.findMany({
-    where: { userId: user.id },
-    orderBy: { date: "desc" },
-    take: 500,
-  });
+    const rows = await prisma.expense.findMany({
+      where: { userId: user.id },
+      orderBy: { date: "desc" },
+      take: 500,
+    });
 
-  const csv = toCSVLike(rows);
+    if (rows.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        provider: "none",
+        data: {
+          month_summary: "No expenses found. Start by adding some expenses to get AI insights!",
+          top_categories: [],
+          anomalies: [],
+          savings_opportunities: [],
+          budget_health: "good" as const,
+        }
+      });
+    }
 
-  const prompt = `
-${aiSystemPrompt}
+    const csv = toCSVLike(rows);
+
+    const prompt = `${aiSystemPrompt}
 
 User expenses (CSV):
 \`\`\`
 ${csv}
 \`\`\`
 
-Return ONLY a valid JSON object with keys:
-- month_summary (string)
-- top_categories (array of {category, spend})
-- anomalies (array of {reason, amount, date?})
-- savings_opportunities (array of {title, detail, impact?, action?})
-- budget_health ("good" | "ok" | "poor")
-`;
+Analyze the data and return ONLY a valid JSON object. No markdown, no code blocks, just the JSON.
+Required structure:
+{
+  "month_summary": "brief summary of spending patterns",
+  "top_categories": [{"category": "name", "spend": number}],
+  "anomalies": [{"reason": "description", "amount": number}],
+  "savings_opportunities": [{"title": "tip title", "detail": "explanation", "impact": "high|medium|low"}],
+  "budget_health": "good"|"ok"|"poor"
+}`;
 
-  try {
-    let text = await callAI(prompt);
+    try {
+      let text = await callAI(prompt);
+      console.log("AI Response (first 200 chars):", text.substring(0, 200));
 
-    // 1) Try robust extraction/repair
-    let data = extractJSONObject(text) as AIAnalysis | null;
+      // Clean up markdown code blocks if present
+      text = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
-    // 2) If provider already sent clean JSON (due to response_format), parse directly
-    if (!data) {
+      // Try parsing directly first
+      let data: AIAnalysis | null = null;
       try {
         data = JSON.parse(text) as AIAnalysis;
-      } catch {
-        // ignore; we'll fallback below
+      } catch (parseErr) {
+        console.log("Direct parse failed, trying extraction");
+        // Try robust extraction
+        data = extractJSONObject(text) as AIAnalysis | null;
       }
-    }
 
-    if (!data) {
-      // Fallback so UI still shows something useful
+      if (!data || !data.month_summary) {
+        console.error("Invalid data structure:", data);
+        throw new Error("Invalid AI response structure");
+      }
+
+      return NextResponse.json({
+        ok: true,
+        provider: process.env.AI_PROVIDER || "gemini",
+        data,
+      });
+    } catch (aiError: any) {
+      console.error("AI call error:", aiError);
+      
+      // Fallback with helpful information
       const fallback: AIAnalysis = {
-        month_summary: "Could not parse AI response. Showing heuristic insights.",
+        month_summary: `AI analysis unavailable: ${aiError.message}. Showing basic expense data.`,
         top_categories: [],
         anomalies: [],
         savings_opportunities: [
-          { title: "Fallback tip", detail: "Review top 3 categories and cut 10% this month", impact: "medium" },
+          { 
+            title: "Review your spending", 
+            detail: "Check your top expense categories and look for areas to reduce spending",
+            impact: "medium"
+          },
         ],
         budget_health: "ok",
       };
+      
       return NextResponse.json({
         ok: true,
-        provider: process.env.AI_PROVIDER || "openrouter",
+        provider: process.env.AI_PROVIDER || "gemini",
         data: fallback,
+        error: aiError?.message ?? "AI call failed"
       });
     }
-
-    return NextResponse.json({
-      ok: true,
-      provider: process.env.AI_PROVIDER || "openrouter",
-      data,
-    });
-  } catch (e: any) {
-    // Hard failure (network, rate limit, etc.)
-    const fallback: AIAnalysis = {
-      month_summary: "AI provider error. Showing heuristic insights.",
-      top_categories: [],
-      anomalies: [],
-      savings_opportunities: [
-        { title: "Fallback tip", detail: "Review top 3 categories and cut 10% this month", impact: "medium" },
-      ],
-      budget_health: "ok",
-    };
+  } catch (outerError: any) {
+    console.error("Route error:", outerError);
     return NextResponse.json(
-      { ok: true, provider: process.env.AI_PROVIDER || "openrouter", data: fallback, error: e?.message ?? "AI call failed" },
-      { status: 200 }
+      { error: "Internal server error", message: outerError?.message },
+      { status: 500 }
     );
   }
 }

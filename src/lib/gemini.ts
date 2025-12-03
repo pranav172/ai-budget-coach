@@ -9,11 +9,11 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
  */
 export async function callGemini(prompt: string): Promise<string> {
   try {
+    // Use gemini-1.5-flash model with JSON mode for better compatibility
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-1.5-flash",
       generationConfig: {
         temperature: 0.2,
-        responseMimeType: "application/json",
       }
     });
 
@@ -42,10 +42,9 @@ export async function callGeminiVision(
 ): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-1.5-flash",
       generationConfig: {
         temperature: 0.2,
-        responseMimeType: "application/json",
       }
     });
 
@@ -90,6 +89,11 @@ Return ONLY a JSON object with this format:
 }`;
 
   const response = await callGemini(prompt);
-  const parsed = JSON.parse(response);
-  return parsed.category || "Other";
+  try {
+    const parsed = JSON.parse(response);
+    return parsed.category || "Other";
+  } catch {
+    // If JSON parsing fails, try to extract category from text
+    return "Other";
+  }
 }
