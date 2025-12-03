@@ -43,20 +43,39 @@ export async function GET() {
 
     const csv = toCSVLike(rows);
 
-    const prompt = `${aiSystemPrompt}
+    const prompt = `You are an expert financial advisor analyzing someone's expenses. Be thorough and helpful.
 
-User expenses (CSV):
+USER EXPENSES (CSV format):
 \`\`\`
 ${csv}
 \`\`\`
 
-Analyze the data and return ONLY a valid JSON object. No markdown, no code blocks, just the JSON.
-Required structure:
+ANALYZE THIS DATA AND PROVIDE:
+
+1. **Month Summary**: Write 2-3 sentences about overall spending patterns, trends, and financial health
+2. **Top Categories**: List the 3-5 highest spending categories with amounts
+3. **Anomalies**: Identify any unusual or large transactions that stand out
+4. **Savings Opportunities**: Provide 3-5 SPECIFIC, ACTIONABLE tips to save money based on their actual spending
+
+BE DETAILED AND SPECIFIC. Use actual numbers from the data. Make it personal and useful.
+
+Return ONLY valid JSON (no markdown, no code blocks):
 {
-  "month_summary": "brief summary of spending patterns",
-  "top_categories": [{"category": "name", "spend": number}],
-  "anomalies": [{"reason": "description", "amount": number}],
-  "savings_opportunities": [{"title": "tip title", "detail": "explanation", "impact": "high|medium|low"}],
+  "month_summary": "detailed 2-3 sentence analysis of spending patterns",
+  "top_categories": [
+    {"category": "Food", "spend": 450.50},
+    {"category": "Transport", "spend": 320.00}
+  ],
+  "anomalies": [
+    {"reason": "Unusually large purchase at X", "amount": 500.00, "date": "2024-12-01"}
+  ],
+  "savings_opportunities": [
+    {
+      "title": "Reduce dining out",
+      "detail": "You spent $450 on food this month. Cooking at home 2 extra days could save $120/month",
+      "impact": "high"
+    }
+  ],
   "budget_health": "good"|"ok"|"poor"
 }`;
 

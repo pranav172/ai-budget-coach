@@ -43,13 +43,14 @@ export function BudgetAlertToast({ spent, limit, onClose }: BudgetAlertToastProp
   return (
     <div
       className={`
-        fixed bottom-6 right-6 z-50 
+        fixed bottom-6 right-6 z-[9999]
         max-w-sm rounded-lg border-2 p-4 shadow-2xl
         backdrop-blur-sm
         transition-all duration-500 ease-out
         ${isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}
         ${colorClasses[alert.color as keyof typeof colorClasses]}
       `}
+      style={{ zIndex: 9999 }}
     >
       <div className="flex items-start gap-3">
         <Icon className="h-5 w-5 mt-0.5 animate-pulse" />
